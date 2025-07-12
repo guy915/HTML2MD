@@ -1,2 +1,2 @@
 # HTML2MD
-Convert HTML to Markdown using LLMs.
+Use LLMs to extract the content from HTML files and reconstruct it in Markdown.
