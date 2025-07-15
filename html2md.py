@@ -17,7 +17,6 @@ import html
 import re
 from logging.handlers import RotatingFileHandler
 
-import aiohttp
 import aiolimiter
 from bs4 import BeautifulSoup, Comment
 from google import genai
@@ -61,7 +60,6 @@ class HTMLProcessor:
     def __init__(self, config: Config):
         self.config = config
         self.remove_tags = config.get('html_cleaning.remove_tags', [])
-        self.preserve_structure = config.get('html_cleaning.preserve_structure', True)
     
     def clean_html(self, html_content: str) -> str:
         """Clean HTML content by removing unwanted elements."""
@@ -207,8 +205,13 @@ class HTML2MDConverter:
         self.logger.info(f"Found {len(html_files)} HTML files in {directory}")
         return html_files
     
-    def check_output_file(self, output_path: str) -> bool:
-        """Check if output file exists and get user confirmation."""
+    def check_output_file(self, output_path: str) -> Optional[str]:
+        """Check if output file exists and get user confirmation.
+        
+        Returns:
+            str: The output path to use (may be modified with timestamp)
+            None: If operation was cancelled
+        """
         if os.path.exists(output_path):
             print(f"Output file '{output_path}' already exists.")
             print("Options:")
@@ -219,19 +222,19 @@ class HTML2MDConverter:
             while True:
                 choice = input("Enter your choice (1-3): ").strip()
                 if choice == '1':
-                    return True
+                    return output_path
                 elif choice == '2':
                     timestamp = int(time.time())
+                    base_dir = os.path.dirname(output_path)
                     new_name = f"{Path(output_path).stem}_{timestamp}.md"
-                    print(f"Will create new file: {new_name}")
-                    return True
+                    return os.path.join(base_dir, new_name)
                 elif choice == '3':
                     print("Operation cancelled.")
-                    return False
+                    return None
                 else:
                     print("Invalid choice. Please enter 1, 2, or 3.")
         
-        return True
+        return output_path
     
     async def process_file(self, file_path: str, total_files: int, current_index: int) -> Tuple[str, str]:
         """Process a single HTML file."""
@@ -272,7 +275,8 @@ class HTML2MDConverter:
         
         # Check output file
         output_path = os.path.join(directory, output_file)
-        if not self.check_output_file(output_path):
+        output_path = self.check_output_file(output_path)
+        if output_path is None:
             return
         
         print(f"Processing {len(html_files)} HTML files...")
@@ -294,7 +298,7 @@ class HTML2MDConverter:
                 completed += 1
                 
                 # Update progress
-                current_file = Path(html_files[completed - 1][0]).name
+                current_file = result[0]  # Use filename from task result
                 print(f"Completed {current_file} ({completed}/{len(html_files)})")
                 
             except Exception as e:
@@ -321,11 +325,13 @@ class HTML2MDConverter:
     def generate_output(self, results: List[Tuple[str, str]], output_path: str) -> None:
         """Generate final markdown output."""
         separator = self.config.get('output.separator', '---')
+        add_headers = self.config.get('output.add_headers', True)
         
         with open(output_path, 'w', encoding='utf-8') as f:
             for i, (filename, content) in enumerate(results):
-                # Add header
-                f.write(f"# {filename}\n\n")
+                # Add header if add_headers is True
+                if add_headers:
+                    f.write(f"# {filename}\n\n")
                 
                 # Add content
                 f.write(content.strip())
