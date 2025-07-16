@@ -127,7 +127,7 @@ class GeminiAPIClient:
 Guidelines:
 - Focus on the main content, ignore navigation and UI elements
 - Start directly with the main content - skip metadata
-- Use hashtags for headings, do NOT use a single hashtag
+- Use hashtags for headings (e.g. "## Description", "## Solution", "## Tests", "## Library", etc.), do NOT use a single hashtag
 - Preserve the structure and formatting of the content
 - Convert HTML elements to appropriate markdown equivalents
 - Do NOT use horizontal rules (---) in your output
