@@ -6,7 +6,7 @@
     "retry_delay_base": 1.0
   },
   "processing": {
-    "max_concurrent": 10,
+    "max_concurrent": 1,
     "rate_limit_per_minute": 15
   },
   "html_cleaning": {
