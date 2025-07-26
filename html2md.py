@@ -143,7 +143,7 @@ class GeminiAPIClient:
                     response = await self._make_api_call(prompt)
                     self.logger.info(f"Successfully converted {filename}")
                     # Add delay between successful requests
-                    await asyncio.sleep(1)  # 1 second delay
+                    await asyncio.sleep(0.1)  # 0.1 second delay
                     return response
                 except Exception as e:
                     self.logger.warning(f"Attempt {attempt + 1} failed for {filename}: {e}")
