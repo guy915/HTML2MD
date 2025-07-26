@@ -123,25 +123,27 @@ class GeminiAPIClient:
     async def convert_html_to_markdown(self, html_content: str, filename: str) -> str:
         """Convert HTML content to markdown using Gemini API."""
         prompt = f"""Convert this HTML content to clean markdown format. 
-
-Guidelines:
-- Focus on the main content, ignore navigation and UI elements
-- Start directly with the main content - skip metadata
-- Use hashtags for headings (e.g. "## Description", "## Solution", "## Tests", "## Library", etc.), do NOT use a single hashtag
-- Preserve the structure and formatting of the content
-- Convert HTML elements to appropriate markdown equivalents
-- Do NOT use horizontal rules (---) in your output
-- Keep code blocks, tables, and other structured content intact
-- Remove any advertisements, navigation, or non-content elements
-
-HTML Content:
-{html_content}"""
+    
+    Guidelines:
+    - Focus on the main content, ignore navigation and UI elements
+    - Start directly with the main content - skip metadata
+    - Use hashtags for headings (e.g. "## Description", "## Solution", "## Tests", "## Library", etc.), do NOT use a single hashtag
+    - Preserve the structure and formatting of the content
+    - Convert HTML elements to appropriate markdown equivalents
+    - Do NOT use horizontal rules (---) in your output
+    - Keep code blocks, tables, and other structured content intact
+    - Remove any advertisements, navigation, or non-content elements
+    
+    HTML Content:
+    {html_content}"""
         
         async with self.rate_limiter:
             for attempt in range(self.max_retries):
                 try:
                     response = await self._make_api_call(prompt)
                     self.logger.info(f"Successfully converted {filename}")
+                    # Add delay between successful requests
+                    await asyncio.sleep(5)  # 5 second delay
                     return response
                 except Exception as e:
                     self.logger.warning(f"Attempt {attempt + 1} failed for {filename}: {e}")
@@ -168,7 +170,18 @@ HTML Content:
             )
             return response.text
         except Exception as e:
-            self.logger.error(f"API call failed: {e}")
+            error_str = str(e)
+            self.logger.error(f"API call failed: {error_str}")
+            
+            # Check for 429 rate limit error and extract retry delay
+            if "429" in error_str and "RESOURCE_EXHAUSTED" in error_str:
+                import re
+                retry_match = re.search(r"'retryDelay': '(\d+)s'", error_str)
+                if retry_match:
+                    retry_delay = int(retry_match.group(1))
+                    self.logger.info(f"Rate limited, waiting {retry_delay} seconds")
+                    await asyncio.sleep(retry_delay)
+            
             raise
 
 
