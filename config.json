@@ -7,7 +7,7 @@
   },
   "processing": {
     "max_concurrent": 10,
-    "rate_limit_per_minute": 60
+    "rate_limit_per_minute": 15
   },
   "html_cleaning": {
     "remove_tags": ["script", "style", "nav", "header", "footer", "aside"],
