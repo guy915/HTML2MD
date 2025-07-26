@@ -2,12 +2,12 @@
   "gemini": {
     "model": "gemini-2.5-flash-lite-preview-06-17",
     "thinking_budget": -1,
-    "max_retries": 5,
+    "max_retries": 3,
     "retry_delay_base": 1.0
   },
   "processing": {
-    "max_concurrent": 1,
-    "rate_limit_per_minute": 15
+    "max_concurrent": 20,
+    "rate_limit_per_minute": 900
   },
   "html_cleaning": {
     "remove_tags": ["script", "style", "nav", "header", "footer", "aside"],
