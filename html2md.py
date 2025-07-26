@@ -111,11 +111,11 @@ class GeminiAPIClient:
         self.client = genai.Client(api_key=api_key)
         self.model = config.get('gemini.model')
         self.thinking_budget = config.get('gemini.thinking_budget', -1)
-        self.max_retries = config.get('gemini.max_retries', 5)
+        self.max_retries = config.get('gemini.max_retries', 3)
         self.retry_delay_base = config.get('gemini.retry_delay_base', 1.0)
         
         # Rate limiting
-        rate_limit = config.get('processing.rate_limit_per_minute', 60)
+        rate_limit = config.get('processing.rate_limit_per_minute', 875)
         self.rate_limiter = aiolimiter.AsyncLimiter(rate_limit, 60)
         
         self.logger = logging.getLogger(__name__)
@@ -123,27 +123,25 @@ class GeminiAPIClient:
     async def convert_html_to_markdown(self, html_content: str, filename: str) -> str:
         """Convert HTML content to markdown using Gemini API."""
         prompt = f"""Convert this HTML content to clean markdown format. 
-    
-    Guidelines:
-    - Focus on the main content, ignore navigation and UI elements
-    - Start directly with the main content - skip metadata
-    - Use hashtags for headings (e.g. "## Description", "## Solution", "## Tests", "## Library", etc.), do NOT use a single hashtag
-    - Preserve the structure and formatting of the content
-    - Convert HTML elements to appropriate markdown equivalents
-    - Do NOT use horizontal rules (---) in your output
-    - Keep code blocks, tables, and other structured content intact
-    - Remove any advertisements, navigation, or non-content elements
-    
-    HTML Content:
-    {html_content}"""
+
+Guidelines:
+- Focus on the main content, ignore navigation and UI elements
+- Start directly with the main content - skip metadata
+- Use hashtags for headings (e.g. "## Description", "## Solution", "## Tests", "## Library", etc.), do NOT use a single hashtag
+- Preserve the structure and formatting of the content
+- Convert HTML elements to appropriate markdown equivalents
+- Do NOT use horizontal rules (---) in your output
+- Keep code blocks, tables, and other structured content intact
+- Remove any advertisements, navigation, or non-content elements
+
+HTML Content:
+{html_content}"""
         
         async with self.rate_limiter:
             for attempt in range(self.max_retries):
                 try:
                     response = await self._make_api_call(prompt)
                     self.logger.info(f"Successfully converted {filename}")
-                    # Add delay between successful requests
-                    await asyncio.sleep(0.1)  # 0.1 second delay
                     return response
                 except Exception as e:
                     self.logger.warning(f"Attempt {attempt + 1} failed for {filename}: {e}")
@@ -195,7 +193,7 @@ class HTML2MDConverter:
         self.logger = logging.getLogger(__name__)
         
         # Semaphore for concurrent processing
-        max_concurrent = config.get('processing.max_concurrent', 10)
+        max_concurrent = config.get('processing.max_concurrent', 20)
         self.semaphore = asyncio.Semaphore(max_concurrent)
     
     def discover_html_files(self, directory: str) -> List[Tuple[str, float]]:
@@ -401,7 +399,7 @@ Examples:
   python html2md.py /path/to/html/files
   python html2md.py /path/to/html/files --api-key YOUR_API_KEY
   python html2md.py /path/to/html/files --output combined.md
-  python html2md.py /path/to/html/files --concurrent 5 --log-level DEBUG
+  python html2md.py /path/to/html/files --concurrent 20 --log-level DEBUG
         """
     )
     
